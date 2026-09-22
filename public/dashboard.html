@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="box">
+    <h1>Dashboard</h1>
+
+    <div id="message" class="message"></div>
+
+    <p id="welcome" style="margin-bottom: 15px; color: #333;">Loading...</p>
+
+    <div class="info" id="details"></div>
+
+    <button class="logout" id="logoutBtn">Logout</button>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const token = localStorage.getItem("token");
+
+    // this page is protected, without a token go back to login
+    if (!token) {
+      window.location.href = "index.html";
+    }
+
+    // load the user details from the protected route
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: "Bearer " + token },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById("welcome").textContent = "Welcome back, " + data.user.username + "!";
+          document.getElementById("details").innerHTML =
+            "<b>Username:</b> " + data.user.username + "<br>" +
+            "<b>Email:</b> " + data.user.email + "<br>" +
+            "<b>Joined on:</b> " + new Date(data.user.createdAt).toLocaleDateString();
+        } else {
+          // token is not valid anymore
+          localStorage.removeItem("token");
+          window.location.href = "index.html";
+        }
+      } catch (err) {
+        showMessage("Could not connect to the server", "error");
+      }
+    }
+
+    loadProfile();
+
+    // logout
+    document.getElementById("logoutBtn").addEventListener("click", async function () {
+      try {
+        await fetch("/api/logout", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+        });
+      } catch (err) {
+        console.log("logout request failed");
+      }
+
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
